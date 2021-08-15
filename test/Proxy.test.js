@@ -47,4 +47,27 @@ describe("Proxy", async () => {
       "already initialized"
     );
   });
+
+  it("allows to change implementations", async () => {
+    const LogicV2 = await ethers.getContractFactory("LogicV2");
+    logicv2 = await LogicV2.deploy();
+    await logicv2.deployed();
+
+    await proxy.setImplementation(logicv2.address);
+
+    abi = [
+      "function initialize() public",
+      "function setMagicNumber(uint256 newMagicNumber) public",
+      "function getMagicNumber() public view returns (uint256)",
+      "function doMagic() public",
+    ];
+
+    const proxied = new ethers.Contract(proxy.address, abi, owner);
+
+    await proxied.setMagicNumber(0x33);
+    expect(await proxied.getMagicNumber()).to.eq("0x33");
+
+    await proxied.doMagic();
+    expect(await proxied.getMagicNumber()).to.eq("0x19");
+  });
 });
